@@ -1,0 +1,50 @@
+name: Build iOS
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild \
+            -project Muyynguyennn.xcodeproj \
+            -scheme Muyynguyennn \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package simulator app
+        run: |
+          mkdir -p artifacts
+          APP_PATH="build/DerivedData/Build/Products/Release-iphonesimulator/Muyynguyennn.app"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" artifacts/Muyynguyennn-iOS-Simulator.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Muyynguyennn-iOS-Simulator
+          path: artifacts/Muyynguyennn-iOS-Simulator.zip
